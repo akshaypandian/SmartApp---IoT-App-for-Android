@@ -1,0 +1,37 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+
+spawn ssh ubuntu@10.0.3.10
+ 
+puts "\n-----------------------------"
+puts "Logged into name-node container"
+puts "-------------------------------\n"
+
+puts "\n***Clear all the snip directories under tmp***\n"
+
+expect "$ " { send "cd /opt/hadoop \r"}
+expect "$ " { send "bin/stop-all.sh \r"}
+expect "$ " { send "bin/start-all.sh \r"}
+expect "$ " { send "jps \r"}
+expect "$ " {send "sleep 5 \r"}
+expect "$ " {send "bin/hadoop dfsadmin -safemode leave \r"}
+expect "$ " { send "bin/hadoop fs -rmr /home/ubuntu/data/snip-hdfs \r"}
+expect "$ " { send "bin/hadoop fs -rmr /home/ubuntu/data/snip-output \r"}
+expect "$ " {send "sleep 5 \r"}
+puts "\nCopying the new data into HDFS\n"
+
+expect "$ " { send "bin/hadoop dfs -copyFromLocal /home/ubuntu/data/snip /home/ubuntu/data/snip-hdfs \r"}
+expect "$ " { send "bin/hadoop dfs -ls /home/ubuntu/data/snip-hdfs \r"}
+
+puts "\nRunning the map-reduce\n"
+
+expect "$ " { send "bin/hadoop jar /home/ubuntu/data/utility.jar org.myorg.Utility /home/ubuntu/data/snip-hdfs/schedules /home/ubuntu/data/snip-output \r"}
+expect "$ " {send "bin/hadoop dfs -cat /home/ubuntu/data/snip-output/part-00000 > /home/ubuntu/data/snip-output/hadoop-output.txt \r"}
+
+#interact 
+expect "$ " { send "cd \r"}
+expect "$ " { send "exit \r" }
+puts "\n Logout from namenode \n"
+
+
